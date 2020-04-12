@@ -90,7 +90,8 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	var file *os.File
 	for i := 0; i < LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
-		if err != nil {
+		defer file.Close()
+        if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
 			time.Sleep(LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
@@ -139,7 +140,8 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	var file *os.File
 	for i := 0; i < LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
-		if err != nil {
+		defer file.Close()
+        if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
 			time.Sleep(LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
@@ -242,12 +244,13 @@ func (t *Table) RestoreUningestedFiles() {
 
 type SaveBlockChunkCB struct {
 	digestdir string
+    table string
 }
 
 func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 
-	t := GetTable(FLAGS.TABLE)
-	if digestname == NO_MORE_BLOCKS {
+	t := GetTable(cb.table)
+    if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
 			t.SaveRecordsToColumns()
 			t.ReleaseRecords()
@@ -320,8 +323,11 @@ func (t *Table) DigestRecords() {
 		// ingestions...
 		os.MkdirAll(digestfile, 0777)
 		basename := path.Base(digesting)
-		cb := SaveBlockChunkCB{digesting}
-		t.LoadRowStoreRecords(basename, cb.CB)
+        cb := SaveBlockChunkCB{
+            digestdir: digesting,
+            table: t.Name,
+        }
+        t.LoadRowStoreRecords(basename, cb.CB)
 	} else {
 		t.ReleaseDigestLock()
 	}

@@ -307,16 +307,15 @@ func (l *Lock) Grab() bool {
 		nf, er := os.Create(lockfile)
 		if er != nil {
 			err = er
-			continue
+			nf.Close()
+            continue
 		}
-
-		defer nf.Close()
 
 		pid := int64(os.Getpid())
 		nf.WriteString(strconv.FormatInt(pid, 10))
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
-
+        nf.Close()
 		if check_pid(lockfile, l) == false {
 			continue
 		}

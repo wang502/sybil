@@ -455,11 +455,6 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	nb := tb.table.LoadBlockFromDir(partialname, nil, false)
 	end = time.Now()
 
-	// TODO:
-	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
-		Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
-	}
-
 	if DEBUG_RECORD_CONSISTENCY {
 		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
